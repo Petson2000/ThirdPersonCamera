@@ -11,6 +11,8 @@ public class ThirdPersonCamera : MonoBehaviour
     Vector3 previousFocusPoint;
     Vector2 orbitAngles = new Vector2(45f, 0f);
 
+    Camera regularCamera;
+
     float lastManualRotationTime; //Keeps track of last manual rotation
 
     [SerializeField]
@@ -38,12 +40,16 @@ public class ThirdPersonCamera : MonoBehaviour
     [SerializeField, Range(0f, 90f)]
     float alignSmoothRange = 45f;
 
+    [SerializeField]
+    LayerMask obstructionMask = -1;
+
+
     private void Awake()
     {
+        regularCamera = GetComponent<Camera>();
         focusPoint = focus.position;
         transform.localRotation = Quaternion.Euler(orbitAngles);
     }
-
     private void LateUpdate()
     {
         UpdateFocusPoint();
@@ -64,6 +70,19 @@ public class ThirdPersonCamera : MonoBehaviour
 
         Vector3 lookDirection = lookRotation * Vector3.forward;             //Handles camera to orbit the player 
         Vector3 lookPosition = focusPoint - lookDirection * distance;
+
+        Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
+        Vector3 rectPosition = lookPosition + rectOffset;
+        Vector3 castFrom = focus.position;
+        Vector3 castLine = rectPosition - castFrom;
+        float castDistance = castLine.magnitude;
+        Vector3 castDirection = castLine / castDistance;
+
+        if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out RaycastHit hit, lookRotation, castDistance - regularCamera.nearClipPlane, obstructionMask))
+        {
+            rectPosition = castFrom + castDirection * hit.distance;
+            lookPosition = rectPosition - rectOffset;
+        }
 
         transform.SetPositionAndRotation(lookPosition, lookRotation);
     }
@@ -155,14 +174,14 @@ public class ThirdPersonCamera : MonoBehaviour
 
         float rotationChange = rotationSpeed * Mathf.Min(Time.unscaledDeltaTime, movementDeltaSqr);
 
-        if(deltaAbs < alignSmoothRange)
+        if (deltaAbs < alignSmoothRange)
         {
             rotationChange *= deltaAbs / alignSmoothRange;
         }
 
-        else if(180f - deltaAbs < alignSmoothRange)
+        else if (180f - deltaAbs < alignSmoothRange)
         {
-            rotationChange *= (180f - deltaAbs) / alignSmoothRange; 
+            rotationChange *= (180f - deltaAbs) / alignSmoothRange;
         }
         orbitAngles.y = Mathf.MoveTowardsAngle(orbitAngles.y, headingAngle, rotationChange);
 
@@ -173,5 +192,17 @@ public class ThirdPersonCamera : MonoBehaviour
     {
         float angle = Mathf.Acos(direction.y) * Mathf.Rad2Deg;
         return direction.x < 0f ? 360f - angle : angle; //If x is negative its counter clockwise and then we have to subtract the angle from 360 deg
+    }
+
+    Vector3 CameraHalfExtends
+    {
+        get
+        {
+            Vector3 halfExtends;
+            halfExtends.y = regularCamera.nearClipPlane * Mathf.Tan(0.5f * Mathf.Deg2Rad * regularCamera.fieldOfView);
+            halfExtends.x = halfExtends.y * regularCamera.aspect;
+            halfExtends.z = 0f;
+            return halfExtends;
+        }
     }
 }

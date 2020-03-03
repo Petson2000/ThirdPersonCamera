@@ -4,8 +4,20 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public float movementSpeed = 10.0f;
-    public float turningSpeed = 60;
+    [SerializeField]
+    [Tooltip("Assign Camera Here")]
+    Transform playerInputSpace = default;
+
+    [SerializeField, Range(0f, 100f)]
+    float maxSpeed = 10f;
+
+    [SerializeField, Range(0f, 100f)]
+    float maxAcceleration = 10f;
+
+    Vector3 desiredVelocity;
+
+    Vector3 velocity;
+
     void Start()
     {
         
@@ -13,12 +25,38 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        float horizontal = Input.GetAxis("Horizontal") * turningSpeed * Time.deltaTime;
-        transform.Rotate(0, horizontal, 0);
+        Vector2 playerInput;
 
-        float vertical = Input.GetAxis("Vertical") * movementSpeed * Time.deltaTime;
-        transform.Rotate(0, vertical, 0);
+        playerInput.x = Input.GetAxis("Horizontal");
+        playerInput.y = Input.GetAxis("Vertical");
 
-        transform.position = new Vector3(horizontal, 0, vertical) * movementSpeed * Time.deltaTime;
+        playerInput = Vector2.ClampMagnitude(playerInput, 1f);
+
+        
+        float maxSpeedChange = maxAcceleration * Time.deltaTime;
+
+        velocity.x = Mathf.MoveTowards(velocity.x, desiredVelocity.x, maxSpeedChange);
+        velocity.z = Mathf.MoveTowards(velocity.x, desiredVelocity.z, maxSpeedChange);
+
+        if(playerInputSpace)
+        {
+            Vector3 forward = playerInputSpace.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            Vector3 right = playerInputSpace.right;
+            right.y = 0f;
+            right.Normalize();
+
+            desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+        }
+
+        else
+        {
+           desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
+        }
+
+        Vector3 displacement = velocity * Time.deltaTime;
+
+        transform.localPosition += displacement;
     }
 }
