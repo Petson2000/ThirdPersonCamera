@@ -3,10 +3,6 @@
 [RequireComponent(typeof(Camera))]
 public class ThirdPersonCamera : MonoBehaviour
 {
-    RaycastHit Hit;
-
-    public GameObject Player;
-
     Vector3 focusPoint;
     Vector3 previousFocusPoint;
     Vector2 orbitAngles = new Vector2(45f, 0f);
@@ -16,6 +12,7 @@ public class ThirdPersonCamera : MonoBehaviour
     float lastManualRotationTime; //Keeps track of last manual rotation
 
     [SerializeField]
+    [Tooltip("Object the camera will focus on")]
     Transform focus = default;
 
     [SerializeField, Range(1f, 20f)]
@@ -24,13 +21,15 @@ public class ThirdPersonCamera : MonoBehaviour
     [SerializeField, Min(0f)]
     float focusRadius = 1f;
 
-    [SerializeField, Range(0f, 1f)] //Keeps camera moving until the focus is back in the center of view
+    [SerializeField, Range(0f, 1f)]
+    [Tooltip("Keeps camera moving until the focus is back in the center of view")]
     float focusCentering = 0.5f;
 
     [SerializeField, Range(1f, 360f)]
     float rotationSpeed = 90f;
 
     [SerializeField, Range(-89f, 89)]
+    [Tooltip("Max and minimum camera angles for the focused object")]
     float minVerticalAngle = -30f, maxVerticalAngle = 60f;
 
     [SerializeField, Min(0f)]
@@ -43,6 +42,12 @@ public class ThirdPersonCamera : MonoBehaviour
     [SerializeField]
     LayerMask obstructionMask = -1;
 
+    [SerializeField, Range(1f, 20f)]
+    float minDistance = 1f;
+
+    [SerializeField, Range(1f, 20f)]
+    float MaxDistance = 20f;
+
 
     private void Awake()
     {
@@ -52,6 +57,16 @@ public class ThirdPersonCamera : MonoBehaviour
     }
     private void LateUpdate()
     {
+        if(Input.GetAxisRaw("Mouse ScrollWheel") > 0 && distance > minDistance)
+        {
+            distance--;
+        }
+
+        else if(Input.GetAxisRaw("Mouse ScrollWheel") < 0 && distance < MaxDistance)
+        {
+            distance++;
+        }
+
         UpdateFocusPoint();
         ManualRotation();
 
@@ -71,6 +86,7 @@ public class ThirdPersonCamera : MonoBehaviour
         Vector3 lookDirection = lookRotation * Vector3.forward;             //Handles camera to orbit the player 
         Vector3 lookPosition = focusPoint - lookDirection * distance;
 
+        // Variables for boxcast to prevent the environment from covering up the player
         Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
         Vector3 rectPosition = lookPosition + rectOffset;
         Vector3 castFrom = focus.position;
@@ -78,6 +94,7 @@ public class ThirdPersonCamera : MonoBehaviour
         float castDistance = castLine.magnitude;
         Vector3 castDirection = castLine / castDistance;
 
+        //Check if player can be seen, if not, change position.
         if (Physics.BoxCast(castFrom, CameraHalfExtends, castDirection, out RaycastHit hit, lookRotation, castDistance - regularCamera.nearClipPlane, obstructionMask))
         {
             rectPosition = castFrom + castDirection * hit.distance;
@@ -152,14 +169,13 @@ public class ThirdPersonCamera : MonoBehaviour
         }
     }
 
-    bool AutomaticRotation() //Checks if the camera should auto align with player and handles auutomatic camera rotation
+    bool AutomaticRotation() //Checks if the camera should auto align with player and handles automatic camera rotation
     {
         if (Time.unscaledDeltaTime - lastManualRotationTime < alignDelay)
         {
             return false;
         }
 
-        //TODO: Make vector3 if player jumps etc
         Vector2 movement = new Vector2(focusPoint.x - previousFocusPoint.x, focusPoint.z - previousFocusPoint.z); //Calculate the movement vector for the current frame
 
         float movementDeltaSqr = movement.sqrMagnitude;
