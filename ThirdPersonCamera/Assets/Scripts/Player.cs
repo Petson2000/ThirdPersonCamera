@@ -28,7 +28,7 @@ public class Player : MonoBehaviour
         {
             desiredVelocity = playerInputSpace.TransformDirection(playerInput.x, 0f, playerInput.y) * maxSpeed;
         }
-
+        
         else
         {
             desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;

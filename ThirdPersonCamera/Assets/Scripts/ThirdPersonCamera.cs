@@ -16,9 +16,11 @@ public class ThirdPersonCamera : MonoBehaviour
     Transform focus = default;
 
     [SerializeField, Range(1f, 20f)]
+    [Tooltip("Distance from focus point")]
     float distance = 5f;
 
     [SerializeField, Min(0f)]
+    [Tooltip("Moves the camera when its focus points differs this much from the ideal focus (player)")]
     float focusRadius = 1f;
 
     [SerializeField, Range(0f, 1f)]
@@ -33,13 +35,14 @@ public class ThirdPersonCamera : MonoBehaviour
     float minVerticalAngle = -30f, maxVerticalAngle = 60f;
 
     [SerializeField, Min(0f)]
-    [Tooltip("Time until camera auto aligns with player")] //TODO, add if you don't want auto alignment, put 0 or something??
+    [Tooltip("Time until camera auto aligns with player, to turn this setting off, put 0 as the value.")]
     float alignDelay = 5f;
 
     [SerializeField, Range(0f, 90f)]
     float alignSmoothRange = 45f;
 
     [SerializeField]
+    [Tooltip("The layers the camera will adjust position if focus point is lost due to an obstacle")]
     LayerMask obstructionMask = -1;
 
     [SerializeField, Range(1f, 20f)]
@@ -61,7 +64,7 @@ public class ThirdPersonCamera : MonoBehaviour
         {
             distance--;
         }
-
+        
         else if(Input.GetAxisRaw("Mouse ScrollWheel") < 0 && distance < MaxDistance)
         {
             distance++;
@@ -86,7 +89,7 @@ public class ThirdPersonCamera : MonoBehaviour
         Vector3 lookDirection = lookRotation * Vector3.forward;             //Handles camera to orbit the player 
         Vector3 lookPosition = focusPoint - lookDirection * distance;
 
-        // Variables for boxcast to prevent the environment from covering up the player
+        // Variables for box cast to prevent the environment from covering up the player
         Vector3 rectOffset = lookDirection * regularCamera.nearClipPlane;
         Vector3 rectPosition = lookPosition + rectOffset;
         Vector3 castFrom = focus.position;
@@ -110,9 +113,10 @@ public class ThirdPersonCamera : MonoBehaviour
 
         Vector3 targetPoint = focus.position;
 
-        if (focusRadius > 0f)
+        if (focusRadius > 0f) //if using focusRadius, otherwise set focus point to target point all the time.
         {
             float distance = Vector3.Distance(targetPoint, focusPoint);
+
             if (distance > focusRadius) //Camera is too far from player, get closer
             {
                 focusPoint = Vector3.Lerp(targetPoint, focusPoint, focusRadius / distance);
@@ -171,6 +175,11 @@ public class ThirdPersonCamera : MonoBehaviour
 
     bool AutomaticRotation() //Checks if the camera should auto align with player and handles automatic camera rotation
     {
+        if(alignDelay == 0)
+        {
+            return false;
+        }
+
         if (Time.unscaledDeltaTime - lastManualRotationTime < alignDelay)
         {
             return false;
@@ -179,6 +188,7 @@ public class ThirdPersonCamera : MonoBehaviour
         Vector2 movement = new Vector2(focusPoint.x - previousFocusPoint.x, focusPoint.z - previousFocusPoint.z); //Calculate the movement vector for the current frame
 
         float movementDeltaSqr = movement.sqrMagnitude;
+        
         if (movementDeltaSqr < 0.000001f)
         {
             return false;
@@ -210,7 +220,7 @@ public class ThirdPersonCamera : MonoBehaviour
         return direction.x < 0f ? 360f - angle : angle; //If x is negative its counter clockwise and then we have to subtract the angle from 360 deg
     }
 
-    Vector3 CameraHalfExtends
+    Vector3 CameraHalfExtends //Calculate half of cameras height, width and depth
     {
         get
         {
