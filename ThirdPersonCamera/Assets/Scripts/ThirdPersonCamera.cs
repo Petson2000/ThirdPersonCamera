@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
+[RequireComponent(typeof(SphereCollider))]
 public class ThirdPersonCamera : MonoBehaviour
 {
     Vector3 focusPoint;
@@ -51,12 +52,16 @@ public class ThirdPersonCamera : MonoBehaviour
     [SerializeField, Range(1f, 20f)]
     float MaxDistance = 20f;
 
+    private LayerMask focusObjectLayer;
 
+    private int standardCullingMask;
     private void Awake()
     {
         regularCamera = GetComponent<Camera>();
         focusPoint = focus.position;
         transform.localRotation = Quaternion.Euler(orbitAngles);
+        focusObjectLayer = focus.gameObject.layer;
+        standardCullingMask = regularCamera.cullingMask;
     }
     private void LateUpdate()
     {
@@ -69,7 +74,7 @@ public class ThirdPersonCamera : MonoBehaviour
         {
             distance++;
         }
-
+        
         UpdateFocusPoint();
         ManualRotation();
 
@@ -230,5 +235,19 @@ public class ThirdPersonCamera : MonoBehaviour
             halfExtends.z = 0f;
             return halfExtends;
         }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer == focusObjectLayer)
+        {
+            Debug.Log("Stop rendering Player");
+            regularCamera.cullingMask = regularCamera.cullingMask - ~focusObjectLayer;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        regularCamera.cullingMask = standardCullingMask;
     }
 }
