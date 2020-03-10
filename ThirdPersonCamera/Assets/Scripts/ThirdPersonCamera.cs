@@ -241,11 +241,9 @@ public class ThirdPersonCamera : MonoBehaviour
     {
         if (other.gameObject.layer == focusObjectLayer)
         {
-            Debug.Log("Stop rendering Player");
             regularCamera.cullingMask = regularCamera.cullingMask - ~focusObjectLayer;
         }
     }
-
     private void OnTriggerExit(Collider other)
     {
         regularCamera.cullingMask = standardCullingMask;
