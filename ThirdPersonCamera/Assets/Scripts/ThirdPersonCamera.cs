@@ -4,14 +4,6 @@
 [RequireComponent(typeof(SphereCollider))]
 public class ThirdPersonCamera : MonoBehaviour
 {
-    Vector3 focusPoint;
-    Vector3 previousFocusPoint;
-    Vector2 orbitAngles = new Vector2(45f, 0f);
-
-    Camera regularCamera;
-
-    float lastManualRotationTime; //Keeps track of last manual rotation
-
     [SerializeField]
     [Tooltip("Object the camera will focus on")]
     Transform focus = default;
@@ -47,10 +39,20 @@ public class ThirdPersonCamera : MonoBehaviour
     LayerMask obstructionMask = -1;
 
     [SerializeField, Range(1f, 20f)]
+    [Tooltip("The minimum distance the camera can zoom in.")]
     float minDistance = 1f;
 
     [SerializeField, Range(1f, 20f)]
+    [Tooltip("The maximum distance the camera can zoom out.")]
     float MaxDistance = 20f;
+
+    Vector3 focusPoint;
+    Vector3 previousFocusPoint;
+    Vector2 orbitAngles = new Vector2(45f, 0f);
+
+    Camera regularCamera;
+
+    float lastManualRotationTime; //Keeps track of last manual rotation
 
     private LayerMask focusObjectLayer;
 
@@ -145,7 +147,7 @@ public class ThirdPersonCamera : MonoBehaviour
 
         const float e = 0.001f;
 
-        if (input.x < -e || input.x > e || input.y < -e || input.y > e) //If input exceeds e, meaning that very small inputs wont be adjusted for
+        if (input.x < -e || input.x > e || input.y < -e || input.y > e) //If input happens
         {
             orbitAngles += rotationSpeed * Time.unscaledDeltaTime * input;
             lastManualRotationTime = Time.unscaledDeltaTime;
@@ -178,7 +180,8 @@ public class ThirdPersonCamera : MonoBehaviour
         }
     }
 
-    bool AutomaticRotation() //Checks if the camera should auto align with player and handles automatic camera rotation
+    //Checks if the camera should auto align with player and handles automatic camera rotation
+    bool AutomaticRotation() //Used if the focus on the focusobject is lost.
     {
         if(alignDelay == 0)
         {
@@ -225,7 +228,7 @@ public class ThirdPersonCamera : MonoBehaviour
         return direction.x < 0f ? 360f - angle : angle; //If x is negative its counter clockwise and then we have to subtract the angle from 360 deg
     }
 
-    Vector3 CameraHalfExtends //Calculate half of cameras height, width and depth
+    Vector3 CameraHalfExtends //Calculate half of cameras height, width and depth, used for box cast.
     {
         get
         {
@@ -237,7 +240,7 @@ public class ThirdPersonCamera : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other) //Check if we are colliding with focus object layer, if we are, stop rendering that layer
     {
         if (other.gameObject.layer == focusObjectLayer)
         {
